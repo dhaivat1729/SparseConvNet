@@ -31,6 +31,11 @@ class Model(nn.Module):
            scn.OutputLayer(dimension))
         self.linear = nn.Linear(m, data.nClassesTotal)
     def forward(self,x):
+        print(x[0].type(), x[1].type())
+        print(x[0].size(), x[1].size())
+        print(x[0][0,:].max(), x[0][1,:].max(), x[0][2,:].max(), x[0][3,:].max(), x[1].max()) 
+        print(x[0][0,:].min(), x[0][1,:].min(), x[0][2,:].min(), x[0][3,:].min(), x[1].max())
+        sys.exit()
         x=self.sparseModel(x)
         x=self.linear(x)
         return x
@@ -130,6 +135,7 @@ for epoch in range(p['epoch'], p['n_epochs'] + 1):
     start = time.time()
     for batch in trainIterator:
         optimizer.zero_grad()
+        print(batch['x'][0:10])
         batch['x'][1]=batch['x'][1].type(dtype)
         batch['y']=batch['y'].type(dtypei)
         batch['mask']=batch['mask'].type(dtype)
