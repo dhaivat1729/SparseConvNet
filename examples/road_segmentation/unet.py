@@ -16,8 +16,8 @@ import math
 import numpy as np
 import _pickle as pkl
 import numpy as np
-import os
 import pandas as pd
+import glob
 
 # data.init(-1,24,24*8,16)
 sz = 24*8
@@ -52,7 +52,8 @@ class train_road_segmentation():
         self.data_path = root_path
         
         ### getting list of the data
-        self.data_list = os.listdir(self.data_path).sort()
+        self.data_list = glob.glob(root_path+'/*.pkl')
+        self.data_list.sort()
 
         ### Number of inputs 
         self.data_length = len(self.data_list)
@@ -69,8 +70,8 @@ class train_road_segmentation():
         self.criterion = criterion
 
         ### getting train and test indices
-        self.train_indices = self.indices[0:self.train_part*self.data_length/(self.train_part + self.test_part)]
-        self.test_indices = self.indices[self.train_part*self.data_length/(self.train_part + self.test_part):-1]
+        self.train_indices = self.indices[0:int(self.train_part*self.data_length/(self.train_part + self.test_part))]
+        self.test_indices = self.indices[int(self.train_part*self.data_length/(self.train_part + self.test_part)):-1]
 
         ### Learning algorithm parameters
         self.p = {}
@@ -98,9 +99,9 @@ class train_road_segmentation():
         x -= min(x)
         y -= min(y)
         z -= min(z)
-        x = 2*x/max(x) -1
-        y = 2*y/max(y) -1
-        z = 2*z/max(z) -1
+        x = x/max(x)
+        y = y/max(y) 
+        z = z/max(z) 
 
         ### Normalizing features?? Not decided yet
 
@@ -110,35 +111,36 @@ class train_road_segmentation():
         self.coords[:,1] = torch.from_numpy(y.copy())
         self.coords[:,2] = torch.from_numpy(z.copy())
         self.features = torch.from_numpy(df.iloc[0]['scan_utm']['intensity'].copy())
+        self.features.resize_(len(self.features), 1)
         del x, y, z
-        self.train_output = 1*(df.iloc[0]['is_road_truth'] == True)
+        self.train_output = torch.from_numpy(1*(df.iloc[0]['is_road_truth'] == True))
 
 
     def train_model(self):
         
         ### Learning params
-        p['n_epochs'] = 10
-        p['initial_lr'] = 1e-1
-        p['lr_decay'] = 4e-2
-        p['weight_decay'] = 1e-4
-        p['momentum'] = 0.9
+        self.p['n_epochs'] = 10
+        self.p['initial_lr'] = 1e-1
+        self.p['lr_decay'] = 4e-2
+        self.p['weight_decay'] = 1e-4
+        self.p['momentum'] = 0.9
         # p['check_point'] = False
-        p['use_cuda'] = torch.cuda.is_available()
-        dtype = 'torch.cuda.FloatTensor' if p['use_cuda'] else 'torch.FloatTensor'
-        dtypei = 'torch.cuda.LongTensor' if p['use_cuda'] else 'torch.LongTensor'
+        self.p['use_cuda'] = torch.cuda.is_available()
+        dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
+        dtypei = 'torch.cuda.LongTensor' if self.p['use_cuda'] else 'torch.LongTensor'
 
-        if p['use_cuda']:
-            self.model.cuda()
-            self.criterion.cuda()
+        if self.p['use_cuda']:
+            self.model = self.model.cuda()
+            self.criterion = self.criterion.cuda()
 
         ### Defining an optimizer for training
         self.optimizer = optim.SGD(self.model.parameters(),
-            lr=p['initial_lr'],
-            momentum = p['momentum'],
-            weight_decay = p['weight_decay'],
+            lr=self.p['initial_lr'],
+            momentum = self.p['momentum'],
+            weight_decay = self.p['weight_decay'],
             nesterov=True)
 
-        for epoch in range(p['n_epochs']):
+        for epoch in range(self.p['n_epochs']):
 
             running_loss = 0
 
@@ -147,8 +149,8 @@ class train_road_segmentation():
             # stats = {}
 
             ### Don't know what this is happening!
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = p['initial_lr'] * math.exp((1 - epoch) * p['lr_decay'])
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = self.p['initial_lr'] * math.exp((1 - epoch) * self.p['lr_decay'])
             scn.forward_pass_multiplyAdd_count=0
             scn.forward_pass_hidden_states=0
             start = time.time()
@@ -156,22 +158,24 @@ class train_road_segmentation():
             ### let's start the training
             ### iterating through the dataset and training
             steps = 0
-            for i in train_indices:
+            for i in self.train_indices:
 
                 ## Keeping count of how many data points are loaded
                 steps+=1 
                 print("At step: ", steps)
 
                 ## let's load the data
-                df = pd.read_pickle(self.data_path + data_list[i])
+                df = pd.read_pickle(self.data_list[i])
 
                 ## Prepare data for training
                 self.normalize_input(df)
-                optimizer.zero_grad()
+                # break
+                self.optimizer.zero_grad()
 
                 ## Converting input into cuda  tensor if GPU is available
-                self.coords=self.coords.type(dtype)
-                self.features=self.features.type(dtypei)
+                self.coords = self.coords.type(dtype)
+                self.features=self.features.type(dtype)
+                self.train_output=self.train_output.type(dtypei)
 
                 ## Forward pass
                 predictions=self.model((self.coords, self.features))
@@ -183,12 +187,13 @@ class train_road_segmentation():
                 loss.backward()
 
                 ## Updating weights
-                optimizer.step()
+                self.optimizer.step()
 
                 ## Calculating running loss
                 running_loss+= loss.item()
             
-            print("Epoch: {}/{}... ".format(e+1, p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))        
+            print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))        
+            # break
 
 
 
