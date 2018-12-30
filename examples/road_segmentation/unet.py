@@ -99,9 +99,9 @@ class train_road_segmentation():
         x -= min(x)
         y -= min(y)
         z -= min(z)
-        x = x/max(x)
-        y = y/max(y) 
-        z = z/max(z) 
+        x = 150*x/max(x)
+        y = 150*y/max(y) 
+        z = 150*z/max(z) 
 
         ### Normalizing features?? Not decided yet
 
@@ -119,18 +119,19 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 10
+        self.p['n_epochs'] = 100
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-4
         self.p['momentum'] = 0.9
         # p['check_point'] = False
-        self.p['use_cuda'] = False # torch.cuda.is_available()
+        self.p['use_cuda'] = torch.cuda.is_available()
         dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
         dtypei = 'torch.cuda.LongTensor' if self.p['use_cuda'] else 'torch.LongTensor'
 
         if self.p['use_cuda']:
             self.model = self.model.cuda()
+            self.model = nn.DataParallel(model)
             self.criterion = self.criterion.cuda()
 
         ### Defining an optimizer for training
@@ -173,13 +174,13 @@ class train_road_segmentation():
                 self.optimizer.zero_grad()
 
                 ## Converting input into cuda  tensor if GPU is available
-                self.coords = self.coords.cuda()
+                self.coords = self.coords.type(torch.LongTensor)
                 self.features=self.features.type(dtype)
                 self.train_output=self.train_output.type(dtypei)
                 
                 ## Forward pass
                 predictions=self.model((self.coords, self.features))
-                print(predictions.max(), predictions.min())
+                # print(predictions.max(), predictions.min())
 
                 ## Computing loss
                 loss = self.criterion.forward(predictions,self.train_output)
@@ -193,7 +194,7 @@ class train_road_segmentation():
                 ## Calculating running loss
                 running_loss+= loss.item()
             
-            print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))        
+                print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(loss.item()))        
 
 
 
@@ -208,7 +209,7 @@ criterion = nn.CrossEntropyLoss()
 trainobj = train_road_segmentation('/home/dhai1729/maplite_data/data_chunks/', model, criterion)
 print("About to go in training.")
 trainobj.train_model()
-
+torch.save(trainobj.model, '/home/dhai1729/road_segmentation.model')
 
 
 
