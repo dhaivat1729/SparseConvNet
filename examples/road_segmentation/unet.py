@@ -125,7 +125,7 @@ class train_road_segmentation():
         self.p['weight_decay'] = 1e-4
         self.p['momentum'] = 0.9
         # p['check_point'] = False
-        self.p['use_cuda'] = torch.cuda.is_available()
+        self.p['use_cuda'] = False # torch.cuda.is_available()
         dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
         dtypei = 'torch.cuda.LongTensor' if self.p['use_cuda'] else 'torch.LongTensor'
 
@@ -173,15 +173,16 @@ class train_road_segmentation():
                 self.optimizer.zero_grad()
 
                 ## Converting input into cuda  tensor if GPU is available
-                self.coords = self.coords.type(dtype)
+                self.coords = self.coords.cuda()
                 self.features=self.features.type(dtype)
                 self.train_output=self.train_output.type(dtypei)
-
+                
                 ## Forward pass
                 predictions=self.model((self.coords, self.features))
+                print(predictions.max(), predictions.min())
 
                 ## Computing loss
-                loss = self.criterion.forward(predictions,train_output)
+                loss = self.criterion.forward(predictions,self.train_output)
 
                 ## backprop into the loss to compute gradients
                 loss.backward()
@@ -193,7 +194,6 @@ class train_road_segmentation():
                 running_loss+= loss.item()
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))        
-            # break
 
 
 
