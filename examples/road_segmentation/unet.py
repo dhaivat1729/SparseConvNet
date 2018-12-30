@@ -196,6 +196,37 @@ class train_road_segmentation():
             
                 print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(loss.item()))        
 
+    def test_model(self):
+
+        steps = 0
+        
+        self.model.eval()
+
+        ## Let's test for entire test set
+        for i in self.test_indices:
+
+                ## Keeping count of how many data points are loaded
+                steps+=1 
+                print("At step: ", steps)
+
+                ## let's load the data
+                df = pd.read_pickle(self.data_list[i])
+
+                ## Prepare data for training
+                self.normalize_input(df)
+                
+                ## Converting input into cuda  tensor if GPU is available
+                self.coords = self.coords.type(torch.LongTensor)
+                self.features=self.features.type(dtype)
+                self.train_output=self.train_output.type(dtypei)
+                with torch.no_grad():
+                    ## Forward pass
+                    predictions=self.model((self.coords, self.features))        
+
+
+                ## Softmax
+                ps = F.softmax(predictions, dim=1)
+                values, index = ps.max(dim = 1)
 
 
 ## Creating a model
