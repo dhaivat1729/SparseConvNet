@@ -221,7 +221,7 @@ class train_road_segmentation():
                 ## Converting input into cuda  tensor if GPU is available
                 self.coords = self.coords.type(torch.LongTensor)
                 self.features=self.features.type(dtype)
-                self.test_output=self.train_output.type(dtypei) ### To compute accuracy
+                self.test_output=self.train_output.type(torch.FloatTensor) ### To compute accuracy
                 with torch.no_grad():
                     ## Forward pass
                     predictions=self.model((self.coords, self.features))        
@@ -230,9 +230,9 @@ class train_road_segmentation():
                 ## Softmax
                 ps = F.softmax(predictions, dim=1)
                 values, index = ps.max(dim = 1)
-                index = index.type(dtype)
+                index = index.type(torch.FloatTensor)
                 accuracy = np.count_nonzero((index - self.test_output).numpy()==0)/len(index)
-                print("Accuracy for point cloud ", i " is: ", accuracy*100, "%.")
+                print("Accuracy for point cloud ", i, " is: ", accuracy*100, "%.")
 
 
 
