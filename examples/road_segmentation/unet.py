@@ -117,7 +117,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        p['n_epochs'] = 100
+        p['n_epochs'] = 10
         p['initial_lr'] = 1e-1
         p['lr_decay'] = 4e-2
         p['weight_decay'] = 1e-4
@@ -155,7 +155,12 @@ class train_road_segmentation():
 
             ### let's start the training
             ### iterating through the dataset and training
+            steps = 0
             for i in train_indices:
+
+                ## Keeping count of how many data points are loaded
+                steps+=1 
+                print("At step: ", steps)
 
                 ## let's load the data
                 df = pd.read_pickle(self.data_path + data_list[i])
@@ -183,18 +188,20 @@ class train_road_segmentation():
                 ## Calculating running loss
                 running_loss+= loss.item()
             
-                print("Epoch: {}/{}... ".format(e+1, p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))          
+            print("Epoch: {}/{}... ".format(e+1, p['n_epochs']), "Loss: {:.4f}".format(running_loss/30))        
 
 
 
 ## Creating a model
 model=Model()
+print("Model is created!")
 
 ## Criterion for the loss
 criterion = nn.CrossEntropyLoss()
 
 ## Creating object(refine this once it works)
 trainobj = train_road_segmentation('/home/dhai1729/maplite_data/data_chunks/', model, criterion)
+print("About to go in training.")
 trainobj.train_model()
 
 
