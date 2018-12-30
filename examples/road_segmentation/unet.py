@@ -195,7 +195,7 @@ criterion = nn.CrossEntropyLoss()
 
 ## Creating object(refine this once it works)
 trainobj = train_road_segmentation('/home/dhai1729/maplite_data/data_chunks/', model, criterion)
-
+trainobj.train_model()
 
 
 
