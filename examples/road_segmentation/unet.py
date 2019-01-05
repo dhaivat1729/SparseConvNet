@@ -28,6 +28,7 @@ m = 32 #Unet number of features
 nPlanes = [m, 2*m, 3*m, 4*m, 5*m] #UNet number of features per level
 classes_total = 2 # Total number of classes
 
+## Facebook's standard network
 class Model(nn.Module):
     def __init__(self):
         nn.Module.__init__(self)
@@ -58,18 +59,18 @@ class train_road_segmentation():
         ### Number of inputs 
         self.data_length = len(self.data_list)
 
-        ### Randomly sampling training and test data
+        ### Getting train and test data in random order
         self.indices = np.random.permutation(self.data_length)
 
         ### Dividing training and test set in some ratio
         ### For 1000 points, 250 points for training and 750 points for testing, then ratio is 1:3
         self.train_part = 1
-        self.test_part = 3
+        self.test_part = 2
 
         ### Defining criterion for the neural network
         self.criterion = criterion
 
-        ### getting train and test indices
+        ### getting train and test indices(randomly)
         self.train_indices = self.indices[0:int(self.train_part*self.data_length/(self.train_part + self.test_part))]
         self.test_indices = self.indices[int(self.train_part*self.data_length/(self.train_part + self.test_part)):-1]
 
@@ -119,7 +120,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 100
+        self.p['n_epochs'] = 10
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-4
@@ -129,6 +130,7 @@ class train_road_segmentation():
         dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
         dtypei = 'torch.cuda.LongTensor' if self.p['use_cuda'] else 'torch.LongTensor'
 
+        ## IF GPU is available
         if self.p['use_cuda']:
             self.model = self.model.cuda()
             self.model = nn.DataParallel(model)
@@ -141,11 +143,12 @@ class train_road_segmentation():
             weight_decay = self.p['weight_decay'],
             nesterov=True)
 
+        ### Let's start training
         for epoch in range(self.p['n_epochs']):
 
             running_loss = 0
 
-            ### Model in a train mdoe
+            ### Model in a train mode
             self.model.train()
             # stats = {}
 
@@ -158,6 +161,7 @@ class train_road_segmentation():
 
             ### let's start the training
             ### iterating through the dataset and training
+            
             steps = 0
             for i in self.train_indices:
 
@@ -196,6 +200,9 @@ class train_road_segmentation():
             
                 print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(loss.item()))        
 
+            if epoch%5 == 0:
+                self.test_model()
+
     def test_model(self):
 
         steps = 0
@@ -204,35 +211,47 @@ class train_road_segmentation():
 
         dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
         dtypei = 'torch.cuda.LongTensor' if self.p['use_cuda'] else 'torch.LongTensor'
-
+        ## This has total number of true pixels for all the pointclouds being tested
+        true_predictions = 0
+        ## Total number of points processed across all the pointclouds being tested
+        total_points = 0
         ## Let's test for entire test set
-        for i in self.test_indices[0:100]:
+        for i in self.test_indices:
 
-                ## Keeping count of how many data points are loaded
-                steps+=1 
-                print("At step: ", steps)
+            ## Keeping count of how many data points are loaded
+            steps+=1 
+            print("At step: ", steps)
 
-                ## let's load the data
-                df = pd.read_pickle(self.data_list[i])
+            ## let's load the data
+            df = pd.read_pickle(self.data_list[i])
 
-                ## Prepare data for training
-                self.normalize_input(df)
+            ## Prepare data for training
+            self.normalize_input(df)
                 
-                ## Converting input into cuda  tensor if GPU is available
-                self.coords = self.coords.type(torch.LongTensor)
-                self.features=self.features.type(dtype)
-                self.test_output=self.train_output.type(torch.FloatTensor) ### To compute accuracy
-                with torch.no_grad():
-                    ## Forward pass
-                    predictions=self.model((self.coords, self.features))        
+            ## Converting input into cuda  tensor if GPU is available
+            self.coords = self.coords.type(torch.LongTensor)
+            self.features=self.features.type(dtype)
+            self.test_output=self.train_output.type(torch.FloatTensor) ### To compute accuracy
+            with torch.no_grad():
+                ## Forward pass
+                predictions=self.model((self.coords, self.features))        
 
 
-                ## Softmax
-                ps = F.softmax(predictions, dim=1)
-                values, index = ps.max(dim = 1)
-                index = index.type(torch.FloatTensor)
-                accuracy = np.count_nonzero((index - self.test_output).numpy()==0)/len(index)
-                print("Accuracy for point cloud ", i, " is: ", accuracy*100, "%.")
+            ## Softmax
+            ps = F.softmax(predictions, dim=1)
+            values, index = ps.max(dim = 1)
+            index = index.type(torch.FloatTensor)
+            accuracy = np.count_nonzero((index - self.test_output).numpy()==0)/len(index)
+            print("Accuracy for point cloud ", i, " is: ", accuracy*100, "%.")
+            true_predictions+= np.count_nonzero((index - self.test_output).numpy()==0)
+            total_points+=len(index)
+
+        overall_accuracy = true_predictions/total_points
+        print("Total accuracy is: ", overall_accuracy*100)
+
+    ## This saves train and test indices, model, accuracy and other necessary information for future usage
+    def save_variables(self):
+        ## To be written in future
 
 
 
@@ -247,7 +266,7 @@ criterion = nn.CrossEntropyLoss()
 trainobj = train_road_segmentation('/home/dhai1729/maplite_data/data_chunks/', model, criterion)
 print("About to go in training.")
 trainobj.train_model()
-torch.save(trainobj.model, '/home/dhai1729/road_segmentation.model')
+torch.save(trainobj.model, '/home/dhai1729/road_segmentation.model')    
 
 
 
