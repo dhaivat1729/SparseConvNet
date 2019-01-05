@@ -250,8 +250,8 @@ class train_road_segmentation():
         print("Total accuracy is: ", overall_accuracy*100)
 
     ## This saves train and test indices, model, accuracy and other necessary information for future usage
-    def save_variables(self):
-        ## To be written in future
+    # def save_variables(self):
+    #     ## To be written in future
 
 
 
