@@ -96,7 +96,7 @@ class train_road_segmentation():
         y = df.iloc[0]['scan_utm']['y']
         z = df.iloc[0]['scan_utm']['z'] 
 
-        ### getting coordinate values between -1 and 1
+        ### getting coordinate values between 0 and 150
         x -= min(x)
         y -= min(y)
         z -= min(z)
@@ -163,11 +163,13 @@ class train_road_segmentation():
             ### iterating through the dataset and training
             
             steps = 0
+            print("Training on ", len(self.train_indices), " point clouds.")
             for i in self.train_indices:
 
                 ## Keeping count of how many data points are loaded
                 steps+=1 
-                print("At step: ", steps)
+                #if steps%100 == 0: 
+                #    print("At step: ", steps)
 
                 ## let's load the data
                 df = pd.read_pickle(self.data_list[i])
@@ -198,9 +200,9 @@ class train_road_segmentation():
                 ## Calculating running loss
                 running_loss+= loss.item()
             
-                print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}".format(loss.item()))        
+            print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if epoch%5 == 0:
+            if (epoch+1)%2 == 0:
                 self.test_model()
 
     def test_model(self):
@@ -216,11 +218,15 @@ class train_road_segmentation():
         ## Total number of points processed across all the pointclouds being tested
         total_points = 0
         ## Let's test for entire test set
+
+        print("Testing on: ", len(self.test_indices), "point clouds.")
+        lowest_acc = 200
+        highest_acc = 10
         for i in self.test_indices:
 
             ## Keeping count of how many data points are loaded
             steps+=1 
-            print("At step: ", steps)
+            #print("At step: ", steps)
 
             ## let's load the data
             df = pd.read_pickle(self.data_list[i])
@@ -241,13 +247,19 @@ class train_road_segmentation():
             ps = F.softmax(predictions, dim=1)
             values, index = ps.max(dim = 1)
             index = index.type(torch.FloatTensor)
-            accuracy = np.count_nonzero((index - self.test_output).numpy()==0)/len(index)
-            print("Accuracy for point cloud ", i, " is: ", accuracy*100, "%.")
+            accuracy = 100*(np.count_nonzero((index - self.test_output).numpy()==0)/len(index))
+            #print("Accuracy for point cloud ", i, " is: ", accuracy, "%.")
+            if accuracy < lowest_acc:
+                lowest_acc = accuracy
+            if accuracy > highest_acc:
+                highest_acc = accuracy
             true_predictions+= np.count_nonzero((index - self.test_output).numpy()==0)
             total_points+=len(index)
 
         overall_accuracy = true_predictions/total_points
         print("Total accuracy is: ", overall_accuracy*100)
+        print("Lowest accuracy is: ", lowest_acc)
+        print("Highest accuracy is: ", highest_acc)
 
     ## This saves train and test indices, model, accuracy and other necessary information for future usage
     # def save_variables(self):

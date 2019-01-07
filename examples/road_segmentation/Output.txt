@@ -1,0 +1,42 @@
+Model is created!
+About to go in training.
+Training on  1138  point clouds.
+Epoch: 1/10...  Loss: {:.4f} 0.14929837910933108
+Training on  1138  point clouds.
+Epoch: 2/10...  Loss: {:.4f} 0.09077891808572783
+Testing on:  2275 point clouds.
+Total accuracy is:  96.48982157573478
+Lowest accuracy is:  55.883454623287676
+Highest accuracy is:  98.46718480138169
+Training on  1138  point clouds.
+Epoch: 3/10...  Loss: {:.4f} 0.07725116873065072
+Training on  1138  point clouds.
+Epoch: 4/10...  Loss: {:.4f} 0.06860195345495727
+Testing on:  2275 point clouds.
+Total accuracy is:  96.89469900666494
+Lowest accuracy is:  56.449771689497716
+Highest accuracy is:  98.671875
+Training on  1138  point clouds.
+Epoch: 5/10...  Loss: {:.4f} 0.06339427472300081
+Training on  1138  point clouds.
+Epoch: 6/10...  Loss: {:.4f} 0.05678426306072773
+Testing on:  2275 point clouds.
+Total accuracy is:  97.14866681235884
+Lowest accuracy is:  56.59870861872146
+Highest accuracy is:  98.67595381526104
+Training on  1138  point clouds.
+Epoch: 7/10...  Loss: {:.4f} 0.05617475399325204
+Training on  1138  point clouds.
+Epoch: 8/10...  Loss: {:.4f} 0.059785965008428726
+Testing on:  2275 point clouds.
+Total accuracy is:  97.08728387519955
+Lowest accuracy is:  56.73694349315068
+Highest accuracy is:  98.85308721934369
+Training on  1138  point clouds.
+Epoch: 9/10...  Loss: {:.4f} 0.051030239738484674
+Training on  1138  point clouds.
+Epoch: 10/10...  Loss: {:.4f} 0.047794395566693716
+Testing on:  2275 point clouds.
+Total accuracy is:  97.31797868282143
+Lowest accuracy is:  56.179544805936075
+Highest accuracy is:  98.9845558449074
