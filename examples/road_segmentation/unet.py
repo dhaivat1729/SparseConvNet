@@ -65,7 +65,7 @@ class train_road_segmentation():
         ### Dividing training and test set in some ratio
         ### For 1000 points, 250 points for training and 750 points for testing, then ratio is 1:3
         self.train_part = 1
-        self.test_part = 2
+        self.test_part = 1
 
         ### Defining criterion for the neural network
         self.criterion = criterion
@@ -88,7 +88,10 @@ class train_road_segmentation():
         ### Sparsenet model
         self.model = model
 
-    ### Normalizes the input data between -1 to 1
+        ### To compute average time of forward pass
+        self.time_taken = [];
+
+    ### Normalizes the input data and samples points
     def normalize_input(self, df):
 
         ### Getting coordinates and features
@@ -104,6 +107,12 @@ class train_road_segmentation():
         y = 150*y/max(y) 
         z = 150*z/max(z) 
 
+        ### sampling every n th point as point cloud has more than 0.1 million points
+        n = 3
+        x = x[0::n]
+        y = y[0::n]
+        z = z[0::n]
+
         ### Normalizing features?? Not decided yet
 
         ### final train and test data
@@ -111,16 +120,24 @@ class train_road_segmentation():
         self.coords[:,0] = torch.from_numpy(x.copy())
         self.coords[:,1] = torch.from_numpy(y.copy())
         self.coords[:,2] = torch.from_numpy(z.copy())
-        self.features = torch.from_numpy(df.iloc[0]['scan_utm']['intensity'].copy())
+
+        ### Getting sampled features
+        self.features = df.iloc[0]['scan_utm']['intensity']
+        self.features = self.features[0::n]
+        self.features = torch.from_numpy(self.features.copy())
         self.features.resize_(len(self.features), 1)
         del x, y, z
-        self.train_output = torch.from_numpy(1*(df.iloc[0]['is_road_truth'] == True))
 
+        ## Getting the ground truth at every sample
+        self.train_output = 1*(df.iloc[0]['is_road_truth'] == True)
+        self.train_output = self.train_output[0::n]
+        self.train_output = torch.from_numpy(self.train_output.copy())
+        #self.train_output = self.train_output.resize_(len(self.train_output), 1)
 
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 10
+        self.p['n_epochs'] = 20
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-4
@@ -169,7 +186,7 @@ class train_road_segmentation():
                 ## Keeping count of how many data points are loaded
                 steps+=1 
                 #if steps%100 == 0: 
-                #    print("At step: ", steps)
+                #print("At step: ", steps)
 
                 ## let's load the data
                 df = pd.read_pickle(self.data_list[i])
@@ -183,13 +200,14 @@ class train_road_segmentation():
                 self.coords = self.coords.type(torch.LongTensor)
                 self.features=self.features.type(dtype)
                 self.train_output=self.train_output.type(dtypei)
-                
+
                 ## Forward pass
                 predictions=self.model((self.coords, self.features))
                 # print(predictions.max(), predictions.min())
 
                 ## Computing loss
                 loss = self.criterion.forward(predictions,self.train_output)
+                # print("Reached backward pass")
 
                 ## backprop into the loss to compute gradients
                 loss.backward()
@@ -202,7 +220,7 @@ class train_road_segmentation():
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if (epoch+1)%2 == 0:
+            if (epoch+1)%5 == 0:
                 self.test_model()
 
     def test_model(self):
@@ -218,6 +236,8 @@ class train_road_segmentation():
         ## Total number of points processed across all the pointclouds being tested
         total_points = 0
         ## Let's test for entire test set
+        accuracy_lt_80 = 0
+    
 
         print("Testing on: ", len(self.test_indices), "point clouds.")
         lowest_acc = 200
@@ -240,7 +260,9 @@ class train_road_segmentation():
             self.test_output=self.train_output.type(torch.FloatTensor) ### To compute accuracy
             with torch.no_grad():
                 ## Forward pass
+                t = time.time()
                 predictions=self.model((self.coords, self.features))        
+                self.time_taken.append(time.time() - t)
 
 
             ## Softmax
@@ -249,6 +271,8 @@ class train_road_segmentation():
             index = index.type(torch.FloatTensor)
             accuracy = 100*(np.count_nonzero((index - self.test_output).numpy()==0)/len(index))
             #print("Accuracy for point cloud ", i, " is: ", accuracy, "%.")
+            if accuracy < 90:
+                accuracy_lt_80 +=1
             if accuracy < lowest_acc:
                 lowest_acc = accuracy
             if accuracy > highest_acc:
@@ -257,9 +281,12 @@ class train_road_segmentation():
             total_points+=len(index)
 
         overall_accuracy = true_predictions/total_points
+        print(accuracy_lt_90, " point clouds have accuracy less than 90.")
+        print("Average time for forward pass is: ", np.mean(np.array(self.time_taken)))
         print("Total accuracy is: ", overall_accuracy*100)
         print("Lowest accuracy is: ", lowest_acc)
         print("Highest accuracy is: ", highest_acc)
+        self.time_taken = []
 
     ## This saves train and test indices, model, accuracy and other necessary information for future usage
     # def save_variables(self):
@@ -275,10 +302,10 @@ print("Model is created!")
 criterion = nn.CrossEntropyLoss()
 
 ## Creating object(refine this once it works)
-trainobj = train_road_segmentation('/home/dhai1729/maplite_data/data_chunks/', model, criterion)
+trainobj = train_road_segmentation('/home/dhai1729/scratch/maplite_data/data_chunks/', model, criterion)
 print("About to go in training.")
 trainobj.train_model()
-torch.save(trainobj.model, '/home/dhai1729/road_segmentation.model')    
+torch.save(trainobj.model, '/home/dhai1729/road_segmentation_2.model')    
 
 
 
