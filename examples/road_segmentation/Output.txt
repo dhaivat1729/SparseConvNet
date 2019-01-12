@@ -1,42 +1,66 @@
 Model is created!
 About to go in training.
-Training on  1138  point clouds.
-Epoch: 1/10...  Loss: {:.4f} 0.14929837910933108
-Training on  1138  point clouds.
-Epoch: 2/10...  Loss: {:.4f} 0.09077891808572783
-Testing on:  2275 point clouds.
-Total accuracy is:  96.48982157573478
-Lowest accuracy is:  55.883454623287676
-Highest accuracy is:  98.46718480138169
-Training on  1138  point clouds.
-Epoch: 3/10...  Loss: {:.4f} 0.07725116873065072
-Training on  1138  point clouds.
-Epoch: 4/10...  Loss: {:.4f} 0.06860195345495727
-Testing on:  2275 point clouds.
-Total accuracy is:  96.89469900666494
-Lowest accuracy is:  56.449771689497716
-Highest accuracy is:  98.671875
-Training on  1138  point clouds.
-Epoch: 5/10...  Loss: {:.4f} 0.06339427472300081
-Training on  1138  point clouds.
-Epoch: 6/10...  Loss: {:.4f} 0.05678426306072773
-Testing on:  2275 point clouds.
-Total accuracy is:  97.14866681235884
-Lowest accuracy is:  56.59870861872146
-Highest accuracy is:  98.67595381526104
-Training on  1138  point clouds.
-Epoch: 7/10...  Loss: {:.4f} 0.05617475399325204
-Training on  1138  point clouds.
-Epoch: 8/10...  Loss: {:.4f} 0.059785965008428726
-Testing on:  2275 point clouds.
-Total accuracy is:  97.08728387519955
-Lowest accuracy is:  56.73694349315068
-Highest accuracy is:  98.85308721934369
-Training on  1138  point clouds.
-Epoch: 9/10...  Loss: {:.4f} 0.051030239738484674
-Training on  1138  point clouds.
-Epoch: 10/10...  Loss: {:.4f} 0.047794395566693716
-Testing on:  2275 point clouds.
-Total accuracy is:  97.31797868282143
-Lowest accuracy is:  56.179544805936075
-Highest accuracy is:  98.9845558449074
+Training on  1707  point clouds.
+Epoch: 1/20...  Loss: {:.4f} 0.12511492583204517
+Training on  1707  point clouds.
+Epoch: 2/20...  Loss: {:.4f} 0.078773466092177
+Training on  1707  point clouds.
+Epoch: 3/20...  Loss: {:.4f} 0.06901897436774958
+Training on  1707  point clouds.
+Epoch: 4/20...  Loss: {:.4f} 0.06212006340825774
+Training on  1707  point clouds.
+Epoch: 5/20...  Loss: {:.4f} 0.05551919445076845
+Testing on:  1706 point clouds.
+4  point clouds have accuracy less than 85.
+Average time for forward pass is:  0.0814048881966791
+Total accuracy is:  97.11548596268445
+Lowest accuracy is:  54.54302226027398
+Highest accuracy is:  98.68847150259067
+Training on  1707  point clouds.
+Epoch: 6/20...  Loss: {:.4f} 0.06305754433948531
+Training on  1707  point clouds.
+Epoch: 7/20...  Loss: {:.4f} 0.055430635454173524
+Training on  1707  point clouds.
+Epoch: 8/20...  Loss: {:.4f} 0.054696766102024175
+Training on  1707  point clouds.
+Epoch: 9/20...  Loss: {:.4f} 0.04953983399578368
+Training on  1707  point clouds.
+Epoch: 10/20...  Loss: {:.4f} 0.05008053484655956
+Testing on:  1706 point clouds.
+4  point clouds have accuracy less than 85.
+Average time for forward pass is:  0.08069287207313887
+Total accuracy is:  97.59209934656316
+Lowest accuracy is:  55.72024828767124
+Highest accuracy is:  98.9043609671848
+Training on  1707  point clouds.
+Epoch: 11/20...  Loss: {:.4f} 0.04751063657211992
+Training on  1707  point clouds.
+Epoch: 12/20...  Loss: {:.4f} 0.0445163965401991
+Training on  1707  point clouds.
+Epoch: 13/20...  Loss: {:.4f} 0.06806437680350456
+Training on  1707  point clouds.
+Epoch: 14/20...  Loss: {:.4f} 0.06954001848311472
+Training on  1707  point clouds.
+Epoch: 15/20...  Loss: {:.4f} 0.054210575849612204
+Testing on:  1706 point clouds.
+4  point clouds have accuracy less than 85.
+Average time for forward pass is:  0.08125374786739192
+Total accuracy is:  97.60314340729447
+Lowest accuracy is:  56.161708047945204
+Highest accuracy is:  98.83620689655173
+Training on  1707  point clouds.
+Epoch: 16/20...  Loss: {:.4f} 0.0493636088774228
+Training on  1707  point clouds.
+Epoch: 17/20...  Loss: {:.4f} 0.044963342811438725
+Training on  1707  point clouds.
+Epoch: 18/20...  Loss: {:.4f} 0.04308102555315468
+Training on  1707  point clouds.
+Epoch: 19/20...  Loss: {:.4f} 0.042633110215406216
+Training on  1707  point clouds.
+Epoch: 20/20...  Loss: {:.4f} 0.0417813437750239
+Testing on:  1706 point clouds.
+5  point clouds have accuracy less than 85.
+Average time for forward pass is:  0.08148295281221271
+Total accuracy is:  97.81718902604244
+Lowest accuracy is:  56.728916952054796
+Highest accuracy is:  99.02849740932642

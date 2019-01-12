@@ -1,0 +1,50 @@
+Model is created!
+About to go in training.
+Training on  1707  point clouds.
+Epoch: 1/12...  Loss: {:.4f} 0.13828995168497146
+Training on  1707  point clouds.
+Epoch: 2/12...  Loss: {:.4f} 0.0851560552120558
+Training on  1707  point clouds.
+Epoch: 3/12...  Loss: {:.4f} 0.07463113114447292
+Testing on:  1706 point clouds.
+11  point clouds have accuracy less than 90.
+Average time for forward pass is:  0.20811400980910272
+Total accuracy is:  96.96279619882804
+Lowest accuracy is:  61.69377853881278
+Highest accuracy is:  98.681640625
+Training on  1707  point clouds.
+Epoch: 4/12...  Loss: {:.4f} 0.06537953999022258
+Training on  1707  point clouds.
+Epoch: 5/12...  Loss: {:.4f} 0.05783326083419961
+Training on  1707  point clouds.
+Epoch: 6/12...  Loss: {:.4f} 0.05596093530643908
+Testing on:  1706 point clouds.
+9  point clouds have accuracy less than 90.
+Average time for forward pass is:  0.2111889019101893
+Total accuracy is:  97.42173661885967
+Lowest accuracy is:  62.01394834474886
+Highest accuracy is:  98.76380522088354
+Training on  1707  point clouds.
+Epoch: 7/12...  Loss: {:.4f} 0.05542620234344183
+Training on  1707  point clouds.
+Epoch: 8/12...  Loss: {:.4f} 0.058564800629419544
+Training on  1707  point clouds.
+Epoch: 9/12...  Loss: {:.4f} 0.050682104683159805
+Testing on:  1706 point clouds.
+10  point clouds have accuracy less than 90.
+Average time for forward pass is:  0.20932102175418546
+Total accuracy is:  97.65733524935398
+Lowest accuracy is:  61.889982876712324
+Highest accuracy is:  98.8831615120275
+Training on  1707  point clouds.
+Epoch: 10/12...  Loss: {:.4f} 0.047651801105560304
+Training on  1707  point clouds.
+Epoch: 11/12...  Loss: {:.4f} 0.050985198844427176
+Training on  1707  point clouds.
+Epoch: 12/12...  Loss: {:.4f} 0.04704313214451476
+Testing on:  1706 point clouds.
+6  point clouds have accuracy less than 90.
+Average time for forward pass is:  0.21074810438949926
+Total accuracy is:  97.71516677096855
+Lowest accuracy is:  61.559111015981735
+Highest accuracy is:  98.945739781232

@@ -108,7 +108,7 @@ class train_road_segmentation():
         z = 150*z/max(z) 
 
         ### sampling every n th point as point cloud has more than 0.1 million points
-        n = 3
+        n = 1
         x = x[0::n]
         y = y[0::n]
         z = z[0::n]
@@ -137,7 +137,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 20
+        self.p['n_epochs'] = 12
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-4
@@ -220,7 +220,7 @@ class train_road_segmentation():
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if (epoch+1)%5 == 0:
+            if (epoch+1)%3 == 0:
                 self.test_model()
 
     def test_model(self):
@@ -236,7 +236,7 @@ class train_road_segmentation():
         ## Total number of points processed across all the pointclouds being tested
         total_points = 0
         ## Let's test for entire test set
-        accuracy_lt_80 = 0
+        bad_acc_pointclouds = 0   ## number of pointclouds with bad accuracy
     
 
         print("Testing on: ", len(self.test_indices), "point clouds.")
@@ -272,7 +272,7 @@ class train_road_segmentation():
             accuracy = 100*(np.count_nonzero((index - self.test_output).numpy()==0)/len(index))
             #print("Accuracy for point cloud ", i, " is: ", accuracy, "%.")
             if accuracy < 90:
-                accuracy_lt_80 +=1
+                bad_acc_pointclouds +=1
             if accuracy < lowest_acc:
                 lowest_acc = accuracy
             if accuracy > highest_acc:
@@ -281,11 +281,12 @@ class train_road_segmentation():
             total_points+=len(index)
 
         overall_accuracy = true_predictions/total_points
-        print(accuracy_lt_90, " point clouds have accuracy less than 90.")
+        print(bad_acc_pointclouds, " point clouds have accuracy less than 90.")
         print("Average time for forward pass is: ", np.mean(np.array(self.time_taken)))
         print("Total accuracy is: ", overall_accuracy*100)
         print("Lowest accuracy is: ", lowest_acc)
         print("Highest accuracy is: ", highest_acc)
+        bad_acc_pointclouds = 0
         self.time_taken = []
 
     ## This saves train and test indices, model, accuracy and other necessary information for future usage
@@ -305,6 +306,7 @@ criterion = nn.CrossEntropyLoss()
 trainobj = train_road_segmentation('/home/dhai1729/scratch/maplite_data/data_chunks/', model, criterion)
 print("About to go in training.")
 trainobj.train_model()
+
 torch.save(trainobj.model, '/home/dhai1729/road_segmentation_2.model')    
 
 
