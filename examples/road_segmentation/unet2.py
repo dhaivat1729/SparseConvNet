@@ -55,6 +55,9 @@ class train_road_segmentation():
         
         ### getting list of the data
         self.data_list = glob.glob(root_path+'/*.pkl')
+        ## Getting new data
+        self.data_list.extend(glob.glob('/home/dhai1729/scratch/maplite_data/truth_snow_500/*.pkl'))
+        self.data_list.extend(glob.glob('/home/dhai1729/scratch/maplite_data/truth_500_2018-09-09-16-21-52/*.pkl'))
         self.data_list.sort()
 
         ### Number of inputs 
@@ -65,7 +68,7 @@ class train_road_segmentation():
 
         ### Dividing training and test set in some ratio
         ### For 1000 points, 250 points for training and 750 points for testing, then ratio is 1:3
-        self.train_part = 1
+        self.train_part = 2
         self.test_part = 1
 
         ### Defining criterion for the neural network
@@ -81,7 +84,7 @@ class train_road_segmentation():
         ### Learning algorithm parameters
         ### Learning params
         self.p = {}
-        self.p['n_epochs'] = 12
+        self.p['n_epochs'] = 16
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-4
@@ -102,6 +105,7 @@ class train_road_segmentation():
         self.features = None
         self.train_output = None
 
+        ### Optimizer(Defined in training)
         ### Optimizer(Defined in training)
         self.optimizer = None
 
@@ -142,7 +146,7 @@ class train_road_segmentation():
         z = 150*z/max(z) 
 
         ### sampling every n th point as point cloud has more than 0.1 million points
-        n = 3
+        n = 5
         x = x[0::n]
         y = y[0::n]
         z = z[0::n]
@@ -156,8 +160,14 @@ class train_road_segmentation():
         self.coords[:,2] = torch.from_numpy(z.copy())
 
         ### Getting sampled features
+        #self.features = torch.randn(len(x), 1)
+        #self.features = self.features[0::n]
         self.features = df.iloc[0]['scan_utm']['intensity']
         self.features = self.features[0::n]
+        #features2 = df.iloc[0]['scan_utm']['ring']
+        #features2 = features2[0::n]
+        #self.features[:,0] = torch.from_numpy(features1.copy())
+        #features2 = features2.astype('float32')
         self.features = torch.from_numpy(self.features.copy())
         self.features.resize_(len(self.features), 1)
         self.features = self.features*0 + 127
@@ -173,7 +183,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 15
+        self.p['n_epochs'] = 16
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-5
@@ -256,7 +266,7 @@ class train_road_segmentation():
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if (epoch+1)%3==0:
+            if (epoch+1)%4==0:
                 self.test_model()
 
     def test_model(self):
@@ -397,7 +407,6 @@ class train_road_segmentation():
 # model = torch.load('/home/dhai1729/road_segmentation.model')
 model = Model()
 print("Model is created!")
-
 ## Criterion for the loss
 criterion = nn.CrossEntropyLoss()
 
@@ -406,10 +415,10 @@ trainobj = train_road_segmentation('/scratch/dhai1729/maplite_data/data_chunks/'
 print("About to go in training.")
 trainobj.train_model()
 ## Time to save all the necessary variables
-f = open('train_test_variables_no_inte.pkl_4', 'wb')
+f = open('train_test_variables_geometry_3.pkl', 'wb')
 pickle.dump([trainobj.model, trainobj.data_list, trainobj.train_indices, trainobj.test_indices, trainobj.criterion, trainobj.p], f)
 f.close()
-torch.save(trainobj.model, '/home/dhai1729/road_segmentation_no_inten.model')    
+torch.save(trainobj.model, '/home/dhai1729/road_segmentation_geometry_3.model')    
 
 
 

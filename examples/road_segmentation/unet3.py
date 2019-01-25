@@ -65,7 +65,7 @@ class train_road_segmentation():
 
         ### Dividing training and test set in some ratio
         ### For 1000 points, 250 points for training and 750 points for testing, then ratio is 1:3
-        self.train_part = 1
+        self.train_part = 9
         self.test_part = 1
 
         ### Defining criterion for the neural network
@@ -156,6 +156,17 @@ class train_road_segmentation():
         self.coords[:,2] = torch.from_numpy(z.copy())
 
         ### Getting sampled features
+        #self.features = torch.randn(len(x), 2)
+        #features1 = df.iloc[0]['scan_utm']['intensity']
+        #features1 = features1[0::n]
+        #features2 = df.iloc[0]['scan_utm']['ring']
+        #features2 = features2[0::n]
+        #self.features[:,0] = torch.from_numpy(features1.copy())
+        #features2 = features2.astype('float32')
+        #self.features[:,1] = torch.from_numpy(features2.copy())
+
+
+
         self.features = df.iloc[0]['scan_utm']['intensity']
         self.features = self.features[0::n]
         self.features = torch.from_numpy(self.features.copy())
@@ -173,7 +184,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 15
+        self.p['n_epochs'] = 20
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-5
@@ -256,7 +267,7 @@ class train_road_segmentation():
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if (epoch+1)%3==0:
+            if (epoch+1)%4==0:
                 self.test_model()
 
     def test_model(self):
@@ -402,14 +413,14 @@ print("Model is created!")
 criterion = nn.CrossEntropyLoss()
 
 ## Creating object(refine this once it works)
-trainobj = train_road_segmentation('/scratch/dhai1729/maplite_data/data_chunks/', model, criterion, thresholds = np.arange(0.05,1.0,0.05))
+trainobj = train_road_segmentation('/scratch/dhai1729/maplite_data/truth_500_2018-09-09-16-21-52/', model, criterion, thresholds = np.arange(0.05,1.0,0.05))
 print("About to go in training.")
 trainobj.train_model()
 ## Time to save all the necessary variables
-f = open('train_test_variables_no_inte.pkl_4', 'wb')
+f = open('train_test_variables_geometry_truth_500_2018-09-09-16-21-52', 'wb')
 pickle.dump([trainobj.model, trainobj.data_list, trainobj.train_indices, trainobj.test_indices, trainobj.criterion, trainobj.p], f)
 f.close()
-torch.save(trainobj.model, '/home/dhai1729/road_segmentation_no_inten.model')    
+torch.save(trainobj.model, '/home/dhai1729/road_segmentation_no_features_truth_500_2018-09-09-16-21-52.model')    
 
 
 
