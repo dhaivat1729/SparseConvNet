@@ -19,15 +19,21 @@ import numpy as np
 import pandas as pd
 import glob
 import pickle
+from datetime import datetime
 
 # data.init(-1,24,24*8,16)
 sz = 24*8
 spatialSize = torch.LongTensor([sz]*3)
+#spatialSize = 4096
+norm_fact = 200
 dimension = 3
 reps = 1 #Conv block repetition factor
-m = 32 #Unet number of features
-nPlanes = [m, 2*m, 3*m, 4*m, 5*m] #UNet number of features per level
+m = 4 #Unet number of features
+nPlanes = [m, 2*m, 3*m] #UNet number of features per level
 classes_total = 2 # Total number of classes
+sampling_factor = 5
+features = ['z'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
+num_features = len(features)
 
 ## Facebook's standard network
 class Model(nn.Module):
@@ -35,7 +41,7 @@ class Model(nn.Module):
         nn.Module.__init__(self)
         self.sparseModel = scn.Sequential().add(
            scn.InputLayer(dimension, spatialSize, mode=3)).add(
-           scn.SubmanifoldConvolution(dimension, 1, m, 3, False)).add(
+           scn.SubmanifoldConvolution(dimension, num_features, m, 3, False)).add(
            scn.UNet(dimension, reps, nPlanes, residual_blocks=False, downsample=[2,2])).add(
            scn.BatchNormReLU(m)).add(
            scn.OutputLayer(dimension))
@@ -48,47 +54,47 @@ class Model(nn.Module):
 ## Class for data loading, training and testing
 
 class train_road_segmentation():
-    def __init__(self, root_path, model, criterion, thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
+    def __init__(self, train_path, test_path, train_mode, test_mode,  model, criterion, features, thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
 
         ### loading the data and all into the os
-        self.data_path = root_path
-        
+        self.train_path = train_path
+        self.test_path = test_path
+
         ### getting list of the data
-        self.data_list = glob.glob(root_path+'/*.pkl')
-        ## Getting new data
-        #self.data_list.extend(glob.glob('/home/dhai1729/scratch/maplite_data/truth_snow_500/*.pkl'))
-        #self.data_list.extend(glob.glob('/home/dhai1729/scratch/maplite_data/truth_500_2018-09-09-16-21-52/*.pkl'))
-        #self.data_list.extend(glob.glob('/home/dhai1729/scratch/maplite_data/truth_500_2019-01-25-14-31-55/*.pkl'))
-        self.data_list.sort()
+        self.train_data_list = []
+        self.test_data_list = []
+    
+        for i in range(len(self.train_path)):
+            self.train_data_list.extend(glob.glob(self.train_path[i] + '/*.pkl'))
+
+        for i in range(len(self.test_path)):
+            self.test_data_list.extend(glob.glob(self.test_path[i] + '/*.pkl'))
+
 
         ### Number of inputs 
-        self.data_length = len(self.data_list)
+        self.train_data_length = len(self.train_data_list)
+        self.test_data_length = len(self.test_data_list)
 
         ### Getting train and test data in random order
-        self.indices = np.random.permutation(self.data_length)
-
-        ### Dividing training and test set in some ratio
-        ### For 1000 points, 250 points for training and 750 points for testing, then ratio is 1:3
-        self.train_part = 9
-        self.test_part = 1
+        self.train_indices = np.random.permutation(np.arange(self.train_data_length))
+        self.test_indices = np.random.permutation(np.arange(self.test_data_length))
 
         ### Defining criterion for the neural network
         self.criterion = criterion
 
-        ### getting train and test indices(randomly)
-        self.train_indices = self.indices[0:int(self.train_part*self.data_length/(self.train_part + self.test_part))]
-        self.test_indices = self.indices[int(self.train_part*self.data_length/(self.train_part + self.test_part)):-1]
-
         ### Sparsenet model
         self.model = model
 
+        ## Features to be used
+        self.use_features = features
+        
         ### Learning algorithm parameters
         ### Learning params
         self.p = {}
-        self.p['n_epochs'] = 30
-        self.p['initial_lr'] = 1e-1
-        self.p['lr_decay'] = 4e-1
-        self.p['weight_decay'] = 1e-3
+        self.p['n_epochs'] = 12
+        self.p['initial_lr'] = 2e-1
+        self.p['lr_decay'] = 1e-1
+        self.p['weight_decay'] = 1e-2   
         self.p['momentum'] = 0.9
         # p['check_point'] = False
         self.p['use_cuda'] = torch.cuda.is_available()
@@ -142,12 +148,12 @@ class train_road_segmentation():
         x -= min(x)
         y -= min(y)
         z -= min(z)
-        x = 150*x/max(x)
-        y = 150*y/max(y) 
-        z = 150*z/max(z) 
+        x = norm_fact*x/max(x)
+        y = norm_fact*y/max(y) 
+        z = norm_fact*z/max(z) 
 
         ### sampling every n th point as point cloud has more than 0.1 million points
-        n = 100
+        n = sampling_factor
         x = x[0::n]
         y = y[0::n]
         z = z[0::n]
@@ -155,22 +161,31 @@ class train_road_segmentation():
         ### Normalizing features?? Not decided yet
 
         ### final train and test data
-        self.coords = torch.randn(len(x), 3)
+        self.coords = torch.randn(len(x), dimension)
         self.coords[:,0] = torch.from_numpy(x.copy())
         self.coords[:,1] = torch.from_numpy(y.copy())
         self.coords[:,2] = torch.from_numpy(z.copy())
 
         ### Getting sampled features
-        self.features = torch.randn(len(x), 1)
-        #self.features = self.features[0::n]
-        features1 = df.iloc[0]['scan_utm']['intensity']
-        features1 = features1[0::n]
-        #features2 = df.iloc[0]['scan_utm']['ring']
-        #features2 = features2[0::n]
-        self.features[:,0] = torch.from_numpy(features1.copy())
+        self.features = torch.randn(len(x), len(self.use_features))
+        inten = df.iloc[0]['scan_utm']['intensity']
+        inten = inten.astype('float32')
+        inten = inten[0::n]
+        ring = df.iloc[0]['scan_utm']['ring']
+        ring = ring.astype('float32')
+        ring = ring[0::n]
+        const_vec = ring*0 + 127
+        features_dict = {'ring':ring, 'z':z, 'inten':inten, 'const_vec':const_vec}
+
+        for i in range(len(self.use_features)):
+            self.features[:,i] = torch.from_numpy(features_dict[self.use_features[i]].reshape(len(x),).copy())
+        #print("self.features.shape is: ", self.features.shape)
+        #self.features[:,0] = torch.from_numpy(features1.copy())
+        #self.features[:,0] = torch.from_numpy(features2.copy())
+        #self.features[:,1] = torch.from_numpy(features3.copy())
         #self.features = self.features.astype('float32')
         #features2 = features2.astype('float32')
-        #self.features[:,1] = torch.from_numpy(features2.copy())
+        #self.features[:,1] = torch.from_numpy(features1.copy())
         #self.features.resize_(len(self.features), 1)
         #self.features = self.features*0 + 127
         #print(self.features)
@@ -185,12 +200,12 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 30
+        self.p['n_epochs'] = 15
         self.p['initial_lr'] = 1e-1
-        self.p['lr_decay'] = 4e-1
-        self.p['weight_decay'] = 1e-3
+        self.p['lr_decay'] = 4e-2
+        self.p['weight_decay'] = 1e-5
         self.p['momentum'] = 0.9
-        self.p['momentum'] = 0.9
+
         # p['check_point'] = False
         self.p['use_cuda'] = torch.cuda.is_available()
         dtype = 'torch.cuda.FloatTensor' if self.p['use_cuda'] else 'torch.FloatTensor'
@@ -218,6 +233,7 @@ class train_road_segmentation():
             self.model.train()
             # stats = {}
 
+
             ### Don't know what this is happening!
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = self.p['initial_lr'] * math.exp((1 - epoch) * self.p['lr_decay'])
@@ -238,7 +254,7 @@ class train_road_segmentation():
                 #print("At step: ", steps)
 
                 ## let's load the data
-                df = pd.read_pickle(self.data_list[i])
+                df = pd.read_pickle(self.train_data_list[i])
 
                 ## Prepare data for training
                 self.normalize_input(df)
@@ -298,7 +314,7 @@ class train_road_segmentation():
             #print("At step: ", steps)
 
             ## let's load the data
-            df = pd.read_pickle(self.data_list[i])
+            df = pd.read_pickle(self.test_data_list[i])
 
             ## Prepare data for training
             self.normalize_input(df)
@@ -314,8 +330,10 @@ class train_road_segmentation():
                 self.time_taken.append(time.time() - t)
 
 
-            ## Softmax
+            ## Softmax  
             self.ps = F.softmax(predictions, dim=1)
+            #index = np.where(self.ps[:,1].cpu().numpy()>0.4)
+            #index = torch.zeros(self.ps.shape[0], 1)
             values, index = self.ps.max(dim = 1)
             index = index.type(torch.FloatTensor)
             accuracy = 100*(np.count_nonzero((index - self.test_output).numpy()==0)/len(index))
@@ -398,8 +416,7 @@ class train_road_segmentation():
 
 
 
-        ## Let's compute the confusion matrix.
-
+    ## Let's compute the confusion matrix.
     ## This saves train and test indices, model, accuracy and other necessary information for future usage
     # def save_variables(self):
     #     ## To be written in future
@@ -409,19 +426,22 @@ class train_road_segmentation():
 ## Creating a model
 # model = torch.load('/home/dhai1729/road_segmentation.model')
 model = Model()
+str_date_time = datetime.now().strftime('%Y%m%d-%H%M%S')
 print("Model is created!")
 ## Criterion for the loss
 criterion = nn.CrossEntropyLoss()
-
+train_path = ['/home/dhai1729/scratch/maplite_data/data_chunks/','/home/dhai1729/scratch/maplite_data/truth_snow_500', '/home/dhai1729/scratch/maplite_data/truth_500_2018-09-09-16-21-52']
+test_path = ['/home/dhai1729/scratch/maplite_data/truth_500_2019-01-25-14-31-55', '/home/dhai1729/scratch/maplite_data/truth_snow_500_2'] 
+train_mode = True
+test_mode = True
 ## Creating object(refine this once it works)
-trainobj = train_road_segmentation('/home/dhai1729/scratch/maplite_data/truth_500_2019-01-25-14-31-55', model, criterion, thresholds = np.arange(0.05,1.0,0.05))
+trainobj = train_road_segmentation(train_path, test_path, train_mode, test_mode, model, criterion, features, thresholds = np.arange(0.05,1.0,0.05))
 print("About to go in training.")
 trainobj.train_model()
 ## Time to save all the necessary variables
-f = open('train_test_variables_2019-01-25-14-31-55_inten', 'wb')
-pickle.dump([trainobj.model, trainobj.data_list, trainobj.train_indices, trainobj.test_indices, trainobj.criterion, trainobj.p], f)
+f = open('/home/dhai1729/small_model_' + str_date_time + '_.pkl', 'wb')
+pickle.dump([train_mode, test_mode, sz, spatialSize, reps, m, norm_fact, sampling_factor, trainobj.model, trainobj.criterion, trainobj.p, features], f)
 f.close()
-torch.save(trainobj.model, '/home/dhai1729/road_segmentation_2019-01-25-14-31-55_inten.model')    
-
+torch.save(trainobj.model, '/home/dhai1729/small_model_' + str_date_time + '_.model')    
 
 
