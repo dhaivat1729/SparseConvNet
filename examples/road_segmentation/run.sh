@@ -1,13 +1,20 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#SBATCH --account=def-bengioy
+#SBATCH --gres=gpu:1		# request GPU "generic resource"
+#SBATCH --cpus-per-task=1	# maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham
+#SBATCH --mem=2000M		# memory per node
+#SBATCH --time=0-00:05		# time (DD-HH:MM)
+#SBATCH --output=%N-%j.out	# %N for node name, %j for jobID
+#SBATCH --requeue
+#SBATCH --mail-user=dhaivat1994@gmail.com
+#SBATCH --mail-type=ALL
 
-# Source bashrc
-#source $HOME/.bashrc
 
-# Activate the environment
 module load miniconda3
-module load cuda
 module load python/3.6
 source activate my_pytorch
 
-# Run the script
-sbatch --time=6:0:0 --ntasks=1 --account=def-bengioy --nodes=1 --mem=8000M python unet2.py
+echo Running on $HOSTNAME
+
+cd ~/SparseConvNet/examples/road_segmentation
+python small_unet.py
