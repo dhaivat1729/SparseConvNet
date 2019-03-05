@@ -25,14 +25,14 @@ from datetime import datetime
 sz = 24*8
 spatialSize = torch.LongTensor([sz]*3)
 #spatialSize = 4096
-norm_fact = 200
+norm_fact = 100
 dimension = 3
 reps = 1 #Conv block repetition factor
 m = 4 #Unet number of features
 nPlanes = [m, 2*m, 3*m] #UNet number of features per level
 classes_total = 2 # Total number of classes
 sampling_factor = 5
-features = ['z'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
+features = ['const_vec'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
 num_features = len(features)
 
 ## Facebook's standard network
@@ -200,7 +200,7 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 15
+        self.p['n_epochs'] = 10
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
         self.p['weight_decay'] = 1e-5
@@ -285,7 +285,7 @@ class train_road_segmentation():
             
             print("Epoch: {}/{}... ".format(epoch+1, self.p['n_epochs']), "Loss: {:.4f}", running_loss/len(self.train_indices))        
 
-            if (epoch+1)%5==0:
+            if (epoch)%5==0:
                 self.test_model()
 
     def test_model(self):
@@ -439,8 +439,22 @@ trainobj = train_road_segmentation(train_path, test_path, train_mode, test_mode,
 print("About to go in training.")
 trainobj.train_model()
 ## Time to save all the necessary variables
+
+## Dictionary to be saved!
+final_data = {'train_path':train_path,
+              'test_path': test_path,
+              'sz': sz,
+              'spatialSize': spatialSize,
+              'reps': reps,
+              'm':m,
+              'norm_fact':norm_fact,
+              'sampling_factor': sampling_factor,
+              'learning_params': trainobj.p,
+              'features': features,
+              'nPlanes': nPlanes}
 f = open('/home/dhai1729/small_model_' + str_date_time + '_.pkl', 'wb')
-pickle.dump([train_mode, test_mode, sz, spatialSize, reps, m, norm_fact, sampling_factor, trainobj.model, trainobj.criterion, trainobj.p, features], f)
+pickle.dump(final_data, f)
+#pickle.dump([train_mode, test_mode, sz, spatialSize, reps, m, norm_fact, sampling_factor, trainobj.p, features], f)
 f.close()
 torch.save(trainobj.model, '/home/dhai1729/small_model_' + str_date_time + '_.model')    
 
