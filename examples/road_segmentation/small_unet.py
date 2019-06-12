@@ -32,7 +32,7 @@ m = 4 #Unet number of features
 nPlanes = [m, 2*m, 3*m] #UNet number of features per level
 classes_total = 2 # Total number of classes
 sampling_factor = 5
-features = ['const_vec'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
+features = ['z', 'inten'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
 num_features = len(features)
 
 ## Facebook's standard network
@@ -430,7 +430,7 @@ str_date_time = datetime.now().strftime('%Y%m%d-%H%M%S')
 print("Model is created!")
 ## Criterion for the loss
 criterion = nn.CrossEntropyLoss()
-train_path = ['/home/dhai1729/scratch/maplite_data/data_chunks/','/home/dhai1729/scratch/maplite_data/truth_snow_500', '/home/dhai1729/scratch/maplite_data/truth_500_2018-09-09-16-21-52']
+train_path = ['/home/dhai1729/scratch/maplite_data/truth_snow_500', '/home/dhai1729/scratch/maplite_data/truth_500_2018-09-09-16-21-52']
 test_path = ['/home/dhai1729/scratch/maplite_data/truth_500_2019-01-25-14-31-55', '/home/dhai1729/scratch/maplite_data/truth_snow_500_2'] 
 train_mode = True
 test_mode = True
