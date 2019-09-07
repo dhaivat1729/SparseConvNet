@@ -28,11 +28,11 @@ spatialSize = torch.LongTensor([sz]*3)
 norm_fact = 100
 dimension = 3
 reps = 1 #Conv block repetition factor
-m = 4 #Unet number of features
-nPlanes = [m, 2*m, 3*m] #UNet number of features per level
+m = 32 #Unet number of features
+nPlanes = [m, 2*m, 3*m, 4*m, 5*m] #UNet number of features per level
 classes_total = 2 # Total number of classes
-sampling_factor = 5
-features = ['z', 'inten'] ## Choices: 'ring', 'z', 'const_vec', 'inten'
+sampling_factor = 3
+features = ['const_vec'] ## Choices: 'ring', 'z', 'const_vec', 'intensity'
 num_features = len(features)
 
 ## Facebook's standard network
@@ -91,7 +91,7 @@ class train_road_segmentation():
         ### Learning algorithm parameters
         ### Learning params
         self.p = {}
-        self.p['n_epochs'] = 12
+        self.p['n_epochs'] = 20
         self.p['initial_lr'] = 2e-1
         self.p['lr_decay'] = 1e-1
         self.p['weight_decay'] = 1e-2   
@@ -200,10 +200,10 @@ class train_road_segmentation():
     def train_model(self):
         
         ### Learning params
-        self.p['n_epochs'] = 10
+        self.p['n_epochs'] = 30
         self.p['initial_lr'] = 1e-1
         self.p['lr_decay'] = 4e-2
-        self.p['weight_decay'] = 1e-5
+        self.p['weight_decay'] = 1e-4
         self.p['momentum'] = 0.9
 
         # p['check_point'] = False
@@ -452,10 +452,10 @@ final_data = {'train_path':train_path,
               'learning_params': trainobj.p,
               'features': features,
               'nPlanes': nPlanes}
-f = open('/home/dhai1729/small_model_' + str_date_time + '_.pkl', 'wb')
+f = open('/home/dhai1729/SparseConvNet/examples/road_segmentation/small_model_' + str_date_time + '_.pkl', 'wb')
 pickle.dump(final_data, f)
 #pickle.dump([train_mode, test_mode, sz, spatialSize, reps, m, norm_fact, sampling_factor, trainobj.p, features], f)
 f.close()
-torch.save(trainobj.model, '/home/dhai1729/small_model_' + str_date_time + '_.model')    
+torch.save(trainobj.model, '/home/dhai1729/SparseConvNet/examples/road_segmentation/small_model_' + str_date_time + '_.model')    
 
 
